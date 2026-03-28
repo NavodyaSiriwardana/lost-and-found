@@ -27,6 +27,18 @@ class FoundItem(BaseModel):
     contactNumber: Optional[str] = None
     status: str
 
+class ClaimCreate(BaseModel):
+    user_id: str
+    user_name: str  
+    found_item_id: str
+    item_name: str
+    proof_description: str
+    phone_number: str
+
+class ClaimUpdate(BaseModel):
+    status: str
+    admin_comments: Optional[str] = None    
+
 # API Gateway එක ආරම්භ කිරීම
 app = FastAPI(
     title="Campus Lost & Found - API Gateway",
@@ -75,25 +87,31 @@ async def forward_request(service_url: str, path: str, request: Request):
 # ==========================================
 # Routes
 # ==========================================
-@app.get("/api/claims/", tags=["Claim Service"])
+# 1. සියලුම Claims ලබා ගැනීම (GET all claims)
+@app.get("/api/claims", tags=["Claim Service"])
 async def get_all_claims(request: Request):
-    return await forward_request(SERVICES["claims"], "api/claims/", request)
+    return await forward_request(SERVICES["claims"], "api/claims", request)
 
+# 2. අලුත් Claim එකක් ඇතුළත් කිරීම (POST new claim)
+@app.post("/api/claims", tags=["Claim Service"])
+async def create_claim_gateway(item: ClaimCreate, request: Request):
+    return await forward_request(SERVICES["claims"], "api/claims", request)
+
+# 3. එක් නිශ්චිත Claim එකක විස්තර ලබා ගැනීම (GET one claim)
 @app.get("/api/claims/{claim_id}", tags=["Claim Service"])
 async def get_single_claim(claim_id: str, request: Request):
     return await forward_request(SERVICES["claims"], f"api/claims/{claim_id}", request)
 
-@app.post("/api/claims/", tags=["Claim Service"])
-async def create_claim(request: Request):
-    return await forward_request(SERVICES["claims"], "api/claims/", request)
-
+# 4. Claim එකක තත්ත්වය යාවත්කාලීන කිරීම (PUT update claim status)
 @app.put("/api/claims/{claim_id}", tags=["Claim Service"])
-async def update_claim_status(claim_id: str, request: Request):
+async def update_claim_status(claim_id: str, item: ClaimUpdate, request: Request):
     return await forward_request(SERVICES["claims"], f"api/claims/{claim_id}", request)
 
+# 5. Claim එකක් මකා දැමීම (DELETE claim)
 @app.delete("/api/claims/{claim_id}", tags=["Claim Service"])
 async def delete_claim(claim_id: str, request: Request):
     return await forward_request(SERVICES["claims"], f"api/claims/{claim_id}", request)
+    
 # 2. Lost Item Service එකට යන පාර (Member 2)
 
 # GET all lost items
