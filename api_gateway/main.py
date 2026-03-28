@@ -79,29 +79,7 @@ async def forward_request(service: str, path: str, method: str, body: dict = Non
 
 
 
-# ==========================================
-# 4. Claim Service Routes (Member 4 - ඔයාගේ කොටස) - Port 8004
-async def forward_request(service_url: str, path: str, request: Request):
-    url = f"{service_url}/{path}"
-    body = await request.body()
 
-    async with httpx.AsyncClient() as client:
-        try:
-            response = await client.request(
-                method=request.method,
-                url=url,
-                headers=request.headers.raw,
-                content=body,
-                params=request.query_params
-            )
-
-            return Response(
-                content=response.content,
-                status_code=response.status_code,
-                headers=dict(response.headers)
-            )
-        except httpx.RequestError:
-            raise HTTPException(status_code=503, detail="Service is currently down or unavailable.")
 
 
 # ==========================================
