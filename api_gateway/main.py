@@ -1,5 +1,5 @@
 import time
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException, Request, Response
 from fastapi.responses import JSONResponse
 import httpx
 from typing import Any, Dict
@@ -42,39 +42,7 @@ SERVICES = {
     "claims": "http://localhost:8004",
 }
 
-# එන ඕනෑම Request එකක් අදාළ Service එකට යවන පොදු Function එක
-async def forward_request(service: str, path: str, method: str, body: dict = None) -> Any:
-    if service not in SERVICES:
-        raise HTTPException(status_code=404, detail=f"Service '{service}' is not registered.")
 
-    url = f"{SERVICES[service]}{path}"
-
-    async with httpx.AsyncClient() as client:
-        try:
-            if method == "GET":
-                response = await client.get(url)
-            elif method == "POST":
-                response = await client.post(url, json=body)
-            elif method == "PUT":
-                response = await client.put(url, json=body)
-            elif method == "DELETE":
-                response = await client.delete(url)
-            else:
-                raise HTTPException(status_code=405, detail="HTTP Method not allowed")
-
-            if response.status_code >= 400:
-                return JSONResponse(
-                    content=response.json() if response.text else {"detail": "Error from service"},
-                    status_code=response.status_code
-                )
-
-            return JSONResponse(
-                content=response.json() if response.text else None,
-                status_code=response.status_code
-            )
-            
-        except httpx.RequestError:
-            raise HTTPException(status_code=503, detail=f"The {service} service is offline. Please start it on its port.")
 
 
 
@@ -108,20 +76,24 @@ async def forward_request(service_url: str, path: str, request: Request):
 # Routes
 # ==========================================
 @app.get("/api/claims/", tags=["Claim Service"])
-async def get_all_claims(): return await forward_request("claims", "/api/claims/", "GET")
+async def get_all_claims(request: Request):
+    return await forward_request(SERVICES["claims"], "api/claims/", request)
 
 @app.get("/api/claims/{claim_id}", tags=["Claim Service"])
-async def get_single_claim(claim_id: str): return await forward_request("claims", f"/api/claims/{claim_id}", "GET")
+async def get_single_claim(claim_id: str, request: Request):
+    return await forward_request(SERVICES["claims"], f"api/claims/{claim_id}", request)
 
 @app.post("/api/claims/", tags=["Claim Service"])
-async def create_claim(body: Dict[str, Any]): return await forward_request("claims", "/api/claims/", "POST", body)
+async def create_claim(request: Request):
+    return await forward_request(SERVICES["claims"], "api/claims/", request)
 
 @app.put("/api/claims/{claim_id}", tags=["Claim Service"])
-async def update_claim_status(claim_id: str, body: Dict[str, Any]): return await forward_request("claims", f"/api/claims/{claim_id}", "PUT", body)
+async def update_claim_status(claim_id: str, request: Request):
+    return await forward_request(SERVICES["claims"], f"api/claims/{claim_id}", request)
 
 @app.delete("/api/claims/{claim_id}", tags=["Claim Service"])
-async def delete_claim(claim_id: str): return await forward_request("claims", f"/api/claims/{claim_id}", "DELETE")
-
+async def delete_claim(claim_id: str, request: Request):
+    return await forward_request(SERVICES["claims"], f"api/claims/{claim_id}", request)
 # 2. Lost Item Service එකට යන පාර (Member 2)
 
 # GET all lost items
@@ -177,7 +149,4 @@ async def update_found_item(item_id: str, item: FoundItem, request: Request):
 async def delete_found_item(item_id: str, request: Request):
     return await forward_request(SERVICES["founditems"], f"api/founditems/{item_id}", request)
 
-# 4. Claim Service එකට යන පාර (Member 4)
-@app.api_route("/api/claims/{path:path}", methods=["GET", "POST", "PUT", "DELETE"])
-async def route_claim_service(path: str, request: Request):
-    return await forward_request(SERVICES["claims"], f"api/claims/{path}", request)
+
