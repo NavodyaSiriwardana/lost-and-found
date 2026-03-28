@@ -1,5 +1,5 @@
 import time
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException, Request, Response
 from fastapi.responses import JSONResponse
 import httpx
 from typing import Any, Dict
@@ -27,6 +27,20 @@ class FoundItem(BaseModel):
     contactNumber: Optional[str] = None
     status: str
 
+
+class ClaimCreate(BaseModel):
+    user_id: str
+    user_name: str  
+    found_item_id: str
+    item_name: str
+    proof_description: str
+    phone_number: str
+
+class ClaimUpdate(BaseModel):
+    status: str
+    admin_comments: Optional[str] = None
+
+
 # API Gateway එක ආරම්භ කිරීම
 app = FastAPI(
     title="Campus Lost & Found - API Gateway",
@@ -42,63 +56,63 @@ SERVICES = {
     "claims": "http://localhost:8004",
 }
 
-# එන ඕනෑම Request එකක් අදාළ Service එකට යවන පොදු Function එක
-async def forward_request(service: str, path: str, method: str, body: dict = None) -> Any:
-    if service not in SERVICES:
-        raise HTTPException(status_code=404, detail=f"Service '{service}' is not registered.")
 
-    url = f"{SERVICES[service]}{path}"
+
+
+
+
+# ==========================================
+# 4. Claim Service Routes (Member 4 - ඔයාගේ කොටස) - Port 8004
+async def forward_request(service_url: str, path: str, request: Request):
+    url = f"{service_url}/{path}"
+    body = await request.body()
 
     async with httpx.AsyncClient() as client:
         try:
-            if method == "GET":
-                response = await client.get(url)
-            elif method == "POST":
-                response = await client.post(url, json=body)
-            elif method == "PUT":
-                response = await client.put(url, json=body)
-            elif method == "DELETE":
-                response = await client.delete(url)
-            else:
-                raise HTTPException(status_code=405, detail="HTTP Method not allowed")
-
-            if response.status_code >= 400:
-                return JSONResponse(
-                    content=response.json() if response.text else {"detail": "Error from service"},
-                    status_code=response.status_code
-                )
-
-            return JSONResponse(
-                content=response.json() if response.text else None,
-                status_code=response.status_code
+            response = await client.request(
+                method=request.method,
+                url=url,
+                headers=request.headers.raw,
+                content=body,
+                params=request.query_params
             )
-            
+
+            return Response(
+                content=response.content,
+                status_code=response.status_code,
+                headers=dict(response.headers)
+            )
         except httpx.RequestError:
-            raise HTTPException(status_code=503, detail=f"The {service} service is offline. Please start it on its port.")
-
-
-
-
-
+            raise HTTPException(status_code=503, detail="Service is currently down or unavailable.")
 
 
 # ==========================================
 # Routes
 # ==========================================
-@app.get("/api/claims/", tags=["Claim Service"])
-async def get_all_claims(): return await forward_request("claims", "/api/claims/", "GET")
+# 1. සියලුම Claims ලබා ගැනීම (GET all claims)
+@app.get("/api/claims", tags=["Claim Service"])
+async def get_all_claims(request: Request):
+    return await forward_request(SERVICES["claims"], "api/claims", request)
 
+# 2. අලුත් Claim එකක් ඇතුළත් කිරීම (POST new claim)
+@app.post("/api/claims", tags=["Claim Service"])
+async def create_claim_gateway(item: ClaimCreate, request: Request):
+    return await forward_request(SERVICES["claims"], "api/claims", request)
+
+# 3. එක් නිශ්චිත Claim එකක විස්තර ලබා ගැනීම (GET one claim)
 @app.get("/api/claims/{claim_id}", tags=["Claim Service"])
-async def get_single_claim(claim_id: str): return await forward_request("claims", f"/api/claims/{claim_id}", "GET")
+async def get_single_claim(claim_id: str, request: Request):
+    return await forward_request(SERVICES["claims"], f"api/claims/{claim_id}", request)
 
-@app.post("/api/claims/", tags=["Claim Service"])
-async def create_claim(body: Dict[str, Any]): return await forward_request("claims", "/api/claims/", "POST", body)
-
+# 4. Claim එකක තත්ත්වය යාවත්කාලීන කිරීම (PUT update claim status)
 @app.put("/api/claims/{claim_id}", tags=["Claim Service"])
-async def update_claim_status(claim_id: str, body: Dict[str, Any]): return await forward_request("claims", f"/api/claims/{claim_id}", "PUT", body)
+async def update_claim_status(claim_id: str, item: ClaimUpdate, request: Request):
+    return await forward_request(SERVICES["claims"], f"api/claims/{claim_id}", request)
 
+# 5. Claim එකක් මකා දැමීම (DELETE claim)
 @app.delete("/api/claims/{claim_id}", tags=["Claim Service"])
-async def delete_claim(claim_id: str): return await forward_request("claims", f"/api/claims/{claim_id}", "DELETE")
+async def delete_claim(claim_id: str, request: Request):
+    return await forward_request(SERVICES["claims"], f"api/claims/{claim_id}", request)
 
 # 2. Lost Item Service එකට යන පාර (Member 2)
 
@@ -155,7 +169,4 @@ async def update_found_item(item_id: str, item: FoundItem, request: Request):
 async def delete_found_item(item_id: str, request: Request):
     return await forward_request(SERVICES["founditems"], f"api/founditems/{item_id}", request)
 
-# 4. Claim Service එකට යන පාර (Member 4)
-@app.api_route("/api/claims/{path:path}", methods=["GET", "POST", "PUT", "DELETE"])
-async def route_claim_service(path: str, request: Request):
-    return await forward_request(SERVICES["claims"], f"api/claims/{path}", request)
+
