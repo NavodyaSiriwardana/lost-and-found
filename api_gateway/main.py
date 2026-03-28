@@ -1,5 +1,17 @@
 from fastapi import FastAPI, Request, Response, HTTPException
 import httpx
+from pydantic import BaseModel
+from typing import Optional
+
+class FoundItem(BaseModel):
+    itemName: str
+    description: str
+    category: Optional[str] = None
+    color: Optional[str] = None
+    dateFound: Optional[str] = None
+    locationFound: Optional[str] = None
+    contactNumber: Optional[str] = None
+    status: str
 
 # API Gateway එක ආරම්භ කිරීම
 app = FastAPI(
@@ -61,9 +73,31 @@ async def route_lost_item_service(path: str, request: Request):
     return await forward_request(SERVICES["lostitems"], f"api/lostitems/{path}", request)
 
 # 3. Found Item Service එකට යන පාර (Member 3)
-@app.api_route("/api/founditems/{path:path}", methods=["GET", "POST", "PUT", "DELETE"])
-async def route_found_item_service(path: str, request: Request):
-    return await forward_request(SERVICES["founditems"], f"api/founditems/{path}", request)
+# GET all found items
+# GET all found items
+@app.get("/api/founditems")
+async def get_found_items(request: Request):
+    return await forward_request(SERVICES["founditems"], "api/founditems", request)
+
+# POST new found item
+@app.post("/api/founditems")
+async def create_found_item(item: FoundItem, request: Request):
+    return await forward_request(SERVICES["founditems"], "api/founditems", request)
+
+# GET one found item
+@app.get("/api/founditems/{item_id}")
+async def get_found_item(item_id: str, request: Request):
+    return await forward_request(SERVICES["founditems"], f"api/founditems/{item_id}", request)
+
+# PUT update one found item
+@app.put("/api/founditems/{item_id}")
+async def update_found_item(item_id: str, item: FoundItem, request: Request):
+    return await forward_request(SERVICES["founditems"], f"api/founditems/{item_id}", request)
+
+# DELETE one found item
+@app.delete("/api/founditems/{item_id}")
+async def delete_found_item(item_id: str, request: Request):
+    return await forward_request(SERVICES["founditems"], f"api/founditems/{item_id}", request)
 
 # 4. Claim Service එකට යන පාර (ඔයාගේ කොටස - Member 4)
 @app.api_route("/api/claims/{path:path}", methods=["GET", "POST", "PUT", "DELETE"])
