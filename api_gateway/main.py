@@ -2,7 +2,7 @@ import time
 from fastapi import FastAPI, HTTPException, Request, Response
 from fastapi.responses import JSONResponse
 import httpx
-from pydantic import BaseModel, EmailStr, Field
+
 from typing import Optional
 from typing import Any, Dict
 from pydantic import BaseModel
