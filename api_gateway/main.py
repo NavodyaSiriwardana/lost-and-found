@@ -5,7 +5,7 @@ import httpx
 
 from typing import Optional
 from typing import Any, Dict
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr
 from typing import Optional
 
 # Lost Item model for Swagger body display
