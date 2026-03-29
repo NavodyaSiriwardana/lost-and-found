@@ -2,6 +2,8 @@ import time
 from fastapi import FastAPI, HTTPException, Request, Response
 from fastapi.responses import JSONResponse
 import httpx
+from pydantic import BaseModel, EmailStr, Field
+from typing import Optional
 from typing import Any, Dict
 from pydantic import BaseModel
 from typing import Optional
@@ -39,7 +41,21 @@ class ClaimUpdate(BaseModel):
     status: str
     admin_comments: Optional[str] = None    
 
-# API Gateway එක ආරම්භ කිරීම
+# --- User Service Models (Swagger UI පෙන්වීමට අවශ්‍යයි) ---
+class UserCreate(BaseModel):
+    full_name: str
+    email: EmailStr
+    student_id: Optional[str] = None
+    role: str = "Student"
+    password: str
+
+class UserUpdate(BaseModel):
+    full_name: Optional[str] = None
+    email: Optional[EmailStr] = None
+    student_id: Optional[str] = None
+    role: Optional[str] = None
+
+# API Gateway ආරම්භ කිරීම
 app = FastAPI(
     title="Campus Lost & Found - API Gateway",
     description="The Front Desk for all microservices (Professional Explicit Routing)",
@@ -54,17 +70,11 @@ SERVICES = {
     "claims": "http://localhost:8004",
 }
 
-
-
-
-
-
-# ==========================================
-# 4. Claim Service Routes (Member 4 - ඔයාගේ කොටස) - Port 8004
+# පොදු Request Forwarding Function එක
 async def forward_request(service_url: str, path: str, request: Request):
     url = f"{service_url}/{path}"
     body = await request.body()
-
+    
     async with httpx.AsyncClient() as client:
         try:
             response = await client.request(
@@ -74,7 +84,7 @@ async def forward_request(service_url: str, path: str, request: Request):
                 content=body,
                 params=request.query_params
             )
-
+            
             return Response(
                 content=response.content,
                 status_code=response.status_code,
@@ -83,8 +93,8 @@ async def forward_request(service_url: str, path: str, request: Request):
         except httpx.RequestError:
             raise HTTPException(status_code=503, detail="Service is currently down or unavailable.")
 
-
 # ==========================================
+# 1. User Service Routes (Member 1) - Port 8001
 # Routes
 # ==========================================
 # 1. සියලුම Claims ලබා ගැනීම (GET all claims)
@@ -97,6 +107,27 @@ async def get_all_claims(request: Request):
 async def create_claim_gateway(item: ClaimCreate, request: Request):
     return await forward_request(SERVICES["claims"], "api/claims", request)
 
+@app.post("/api/users/register", tags=["User Service"])
+async def register_user_gateway(item: UserCreate, request: Request):
+    return await forward_request(SERVICES["users"], "api/users/register", request)
+
+@app.get("/api/users", tags=["User Service"])
+async def get_all_users_gateway(request: Request):
+    return await forward_request(SERVICES["users"], "api/users", request)
+
+@app.get("/api/users/{user_id}", tags=["User Service"])
+async def get_user_gateway(user_id: str, request: Request):
+    return await forward_request(SERVICES["users"], f"api/users/{user_id}", request)
+
+@app.put("/api/users/{user_id}", tags=["User Service"])
+async def update_user_gateway(user_id: str, item: UserUpdate, request: Request):
+    return await forward_request(SERVICES["users"], f"api/users/{user_id}", request)
+
+@app.delete("/api/users/{user_id}", tags=["User Service"])
+async def delete_user_gateway(user_id: str, request: Request):
+    return await forward_request(SERVICES["users"], f"api/users/{user_id}", request)
+
+# සටහන: මෙතනින් පහළට අනෙකුත් සාමාජිකයින්ගේ (Lost, Found, Claim) Routes ඇතුළත් කරන්න.
 # 3. එක් නිශ්චිත Claim එකක විස්තර ලබා ගැනීම (GET one claim)
 @app.get("/api/claims/{claim_id}", tags=["Claim Service"])
 async def get_single_claim(claim_id: str, request: Request):
