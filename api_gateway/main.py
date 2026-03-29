@@ -146,27 +146,27 @@ async def delete_claim(claim_id: str, request: Request):
 # 2. Lost Item Service එකට යන පාර (Member 2)
 
 # GET all lost items
-@app.get("/api/lostitems")
+@app.get("/api/lostitems" , tags=["Lost Item Service"])
 async def get_lost_items(request: Request):
     return await forward_request(SERVICES["lostitems"], "api/lostitems", request)
 
 # POST new lost item
-@app.post("/api/lostitems")
+@app.post("/api/lostitems", tags=["Lost Item Service"])
 async def create_lost_item(item: LostItem, request: Request):
     return await forward_request(SERVICES["lostitems"], "api/lostitems", request)
 
 # GET one lost item
-@app.get("/api/lostitems/{item_id}")
+@app.get("/api/lostitems/{item_id}", tags=["Lost Item Service"])
 async def get_lost_item(item_id: str, request: Request):
     return await forward_request(SERVICES["lostitems"], f"api/lostitems/{item_id}", request)
 
 # PUT update one lost item
-@app.put("/api/lostitems/{item_id}")
+@app.put("/api/lostitems/{item_id}", tags=["Lost Item Service"])
 async def update_lost_item(item_id: str, item: LostItem, request: Request):
     return await forward_request(SERVICES["lostitems"], f"api/lostitems/{item_id}", request)
 
 # DELETE one lost item
-@app.delete("/api/lostitems/{item_id}")
+@app.delete("/api/lostitems/{item_id}", tags=["Lost Item Service"])
 async def delete_lost_item(item_id: str, request: Request):
     return await forward_request(SERVICES["lostitems"], f"api/lostitems/{item_id}", request)
 
@@ -174,27 +174,27 @@ async def delete_lost_item(item_id: str, request: Request):
 # 3. Found Item Service එකට යන පාර (Member 3)
 # GET all found items
 # GET all found items
-@app.get("/api/founditems")
+@app.get("/api/founditems", tags=["Found Item Service"])
 async def get_found_items(request: Request):
     return await forward_request(SERVICES["founditems"], "api/founditems", request)
 
 # POST new found item
-@app.post("/api/founditems")
+@app.post("/api/founditems", tags=["Found Item Service"])
 async def create_found_item(item: FoundItem, request: Request):
     return await forward_request(SERVICES["founditems"], "api/founditems", request)
 
 # GET one found item
-@app.get("/api/founditems/{item_id}")
+@app.get("/api/founditems/{item_id}", tags=["Found Item Service"])
 async def get_found_item(item_id: str, request: Request):
     return await forward_request(SERVICES["founditems"], f"api/founditems/{item_id}", request)
 
 # PUT update one found item
-@app.put("/api/founditems/{item_id}")
+@app.put("/api/founditems/{item_id}", tags=["Found Item Service"])
 async def update_found_item(item_id: str, item: FoundItem, request: Request):
     return await forward_request(SERVICES["founditems"], f"api/founditems/{item_id}", request)
 
 # DELETE one found item
-@app.delete("/api/founditems/{item_id}")
+@app.delete("/api/founditems/{item_id}", tags=["Found Item Service"])
 async def delete_found_item(item_id: str, request: Request):
     return await forward_request(SERVICES["founditems"], f"api/founditems/{item_id}", request)
 
