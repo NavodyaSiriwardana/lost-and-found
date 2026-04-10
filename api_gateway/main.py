@@ -55,14 +55,14 @@ class UserUpdate(BaseModel):
     student_id: Optional[str] = None
     role: Optional[str] = None
 
-# API Gateway ආරම්භ කිරීම
+# API Gateway Start
 app = FastAPI(
     title="Campus Lost & Found - API Gateway",
     description="The Front Desk for all microservices (Professional Explicit Routing)",
     version="2.0.0"
 )
 
-# අපේ Microservices 4 දුවන Ports වල ලිපිනයන්
+# Addresses of 4 Microservices Ports
 SERVICES = {
     "users": "http://localhost:8001",
     "lostitems": "http://localhost:8002",
@@ -70,7 +70,7 @@ SERVICES = {
     "claims": "http://localhost:8004",
 }
 
-# පොදු Request Forwarding Function එක
+# Common Request Forwarding Function 
 async def forward_request(service_url: str, path: str, request: Request):
     url = f"{service_url}/{path}"
     body = await request.body()
@@ -97,12 +97,12 @@ async def forward_request(service_url: str, path: str, request: Request):
 # 1. User Service Routes (Member 1) - Port 8001
 # Routes
 # ==========================================
-# 1. සියලුම Claims ලබා ගැනීම (GET all claims)
+# 1. (GET all claims)
 @app.get("/api/claims", tags=["Claim Service"])
 async def get_all_claims(request: Request):
     return await forward_request(SERVICES["claims"], "api/claims", request)
 
-# 2. අලුත් Claim එකක් ඇතුළත් කිරීම (POST new claim)
+# 2. (POST new claim)
 @app.post("/api/claims", tags=["Claim Service"])
 async def create_claim_gateway(item: ClaimCreate, request: Request):
     return await forward_request(SERVICES["claims"], "api/claims", request)
@@ -127,23 +127,22 @@ async def update_user_gateway(user_id: str, item: UserUpdate, request: Request):
 async def delete_user_gateway(user_id: str, request: Request):
     return await forward_request(SERVICES["users"], f"api/users/{user_id}", request)
 
-# සටහන: මෙතනින් පහළට අනෙකුත් සාමාජිකයින්ගේ (Lost, Found, Claim) Routes ඇතුළත් කරන්න.
-# 3. එක් නිශ්චිත Claim එකක විස්තර ලබා ගැනීම (GET one claim)
+
 @app.get("/api/claims/{claim_id}", tags=["Claim Service"])
 async def get_single_claim(claim_id: str, request: Request):
     return await forward_request(SERVICES["claims"], f"api/claims/{claim_id}", request)
 
-# 4. Claim එකක තත්ත්වය යාවත්කාලීන කිරීම (PUT update claim status)
+# 4. (PUT update claim status)
 @app.put("/api/claims/{claim_id}", tags=["Claim Service"])
 async def update_claim_status(claim_id: str, item: ClaimUpdate, request: Request):
     return await forward_request(SERVICES["claims"], f"api/claims/{claim_id}", request)
 
-# 5. Claim එකක් මකා දැමීම (DELETE claim)
+# 5. (DELETE claim)
 @app.delete("/api/claims/{claim_id}", tags=["Claim Service"])
 async def delete_claim(claim_id: str, request: Request):
     return await forward_request(SERVICES["claims"], f"api/claims/{claim_id}", request)
     
-# 2. Lost Item Service එකට යන පාර (Member 2)
+# 
 
 # GET all lost items
 @app.get("/api/lostitems" , tags=["Lost Item Service"])
@@ -171,8 +170,7 @@ async def delete_lost_item(item_id: str, request: Request):
     return await forward_request(SERVICES["lostitems"], f"api/lostitems/{item_id}", request)
 
 
-# 3. Found Item Service එකට යන පාර (Member 3)
-# GET all found items
+
 # GET all found items
 @app.get("/api/founditems", tags=["Found Item Service"])
 async def get_found_items(request: Request):
